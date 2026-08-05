@@ -1,0 +1,37 @@
+name: Build Mac DMG 测评安装包
+# 两种触发方式：推送代码自动打包 / 手动点击运行
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-mac-dmg:
+    runs-on: macos-latest # GitHub苹果云主机（M1/M2架构，通用包）
+    timeout-minutes: 20 # 最长运行20分钟，防止卡死
+    steps:
+      # 1.拉取全部项目代码
+      - name: 拉取项目源码
+        uses: actions/checkout@v4
+
+      # 2.安装Node.js 20稳定版
+      - name: 配置Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm # 缓存依赖，大幅提速
+
+      # 3.安装项目依赖
+      - name: 安装npm依赖
+        run: npm ci
+
+      # 4.执行打包命令生成dmg
+      - name: 打包Mac .dmg镜像
+        run: npm run build-mac
+
+      # 5.上传打包产物，供下载
+      - name: 上传dmg安装包
+        uses: actions/upload-artifact@v4
+        with:
+          name: Aon测评_Mac安装包
+          path: dist/*.dmg
