@@ -4,7 +4,7 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
-# 全开权限，彻底消除v4上传时GH_TOKEN校验报错
+# 全开权限
 permissions: write-all
 
 jobs:
@@ -12,28 +12,26 @@ jobs:
     runs-on: macos-latest
     timeout-minutes: 20
     steps:
-      # 拉取源码
       - name: 拉取项目源码
         uses: actions/checkout@v4
 
-      # 配置Node20
       - name: 配置Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
 
-      # 安装依赖（无lock文件也可运行）
       - name: 安装npm依赖
         run: npm install
 
-      # 打包生成dmg
       - name: 打包Mac .dmg镜像
         run: npm run build-mac
 
-      # 使用v4官方稳定版本，不再用废弃v3
+      # 关键：把内置GITHUB_TOKEN赋值给GH_TOKEN，解决v4校验报错
       - name: 上传dmg安装包
         uses: actions/upload-artifact@v4
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           name: Aon测评_Mac安装包
           path: dist/*.dmg
