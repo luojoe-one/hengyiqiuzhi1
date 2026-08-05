@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>逻辑推理答题</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Microsoft YaHei", sans-serif;
+        }
+        body {
+            background: #ffffff;
+        }
+        .top-bar {
+            background-color: #0066bb;
+            height: 48px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 16px;
+            color: white;
+            font-size: 20px;
+        }
+        .title-text {
+            text-align: center;
+            font-size: 26px;
+            font-weight: 600;
+            color: #222;
+            margin-top: 36px;
+            margin-bottom: 32px;
+        }
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(4, 90px);
+            grid-template-rows: repeat(4, 90px);
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 30px;
+            position: relative;
+        }
+        .grid-cell {
+            width: 90px;
+            height: 90px;
+            background-color: #ffffff;
+            border: 1px solid #ddd;
+            box-shadow: 0 1px 3px #00000018;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 36px;
+        }
+        .grid-cell.empty {
+            cursor: pointer;
+        }
+        .grid-cell.empty.active {
+            border: 2px solid #0066bb;
+        }
+        .grid-cell.locked {
+            cursor: default;
+        }
+        .popup-option-wrap {
+            position: absolute;
+            display: none;
+            gap:8px;
+            padding:8px;
+            background:#fff;
+            border:1px solid #ccc;
+            box-shadow:0 2px 12px rgba(0,0,0,0.15);
+            z-index:10;
+        }
+        .popup-option-item {
+            width:70px;
+            height:70px;
+            border:1px solid #ddd;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            cursor:pointer;
+        }
+        .popup-option-item:hover{
+            background:#f3f8ff;
+        }
+        .divider-line {
+            width: 400px;
+            height: 1px;
+            background-color: #999;
+            margin: 0 auto 30px;
+        }
+        .option-container {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+        .option-item {
+            width: 90px;
+            height: 90px;
+            background-color: #ffffff;
+            border: 1px solid #ddd;
+            box-shadow: 0 1px 3px #00000018;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+        .option-correct {
+            background-color: #b9e8b9 !important;
+        }
+        .option-wrong {
+            background-color: #f8baba !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="top-bar">
+        <span>逻辑推理</span>
+        <span id="timer">06:00</span>
+    </div>
+
+    <h2 class="title-text">请选择正确的答案。</h2>
+
+    <div class="grid-container" id="boardWrap">
+        <div class="popup-option-wrap" id="popupPanel">
+            <div class="popup-option-item" data-shape="circle">
+                <svg width="32" height="32" viewBox="0 0 100 100">
+                    <circle cx="50" cy="50" r="40" fill="#608800"/>
+                </svg>
+            </div>
+            <div class="popup-option-item" data-shape="triangle">
+                <svg width="32" height="32" viewBox="0 0 100 100">
+                    <polygon points="50,10 90,90 10,90" fill="#0050aa"/>
+                </svg>
+            </div>
+            <div class="popup-option-item" data-shape="square">
+                <svg width="32" height="32" viewBox="0 0 100 100">
+                    <rect x="10" y="10" width="80" height="80" fill="#ee3311"/>
+                </svg>
+            </div>
+            <div class="popup-option-item" data-shape="plus">
+                <svg width="32" height="32" viewBox="0 0 100 100">
+                    <path d="M40,10 L60,10 L60,40 L90,40 L90,60 L60,60 L60,90 L40,90 L40,60 L10,60 L10,40 L40,40 Z" fill="#0088dd"/>
+                </svg>
+            </div>
+        </div>
+    </div>
+
+    <div class="divider-line"></div>
+
+    <div class="option-container">
+        <div class="option-item" data-shape="circle">
+            <svg width="40" height="40" viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="40" fill="#608800"/>
+            </svg>
+        </div>
+        <div class="option-item" data-shape="triangle">
+            <svg width="40" height="40" viewBox="0 0 100 100">
+                <polygon points="50,10 90,90 10,90" fill="#0050aa"/>
+            </svg>
+        </div>
+        <div class="option-item" data-shape="square">
+            <svg width="40" height="40" viewBox="0 0 100 100">
+                <rect x="10" y="10" width="80" height="80" fill="#ee3311"/>
+            </svg>
+        </div>
+        <div class="option-item" data-shape="plus">
+            <svg width="40" height="40" viewBox="0 0 100 100">
+                <path d="M40,10 L60,10 L60,40 L90,40 L90,60 L60,60 L60,90 L40,90 L40,60 L10,60 L10,40 L40,40 Z" fill="#0088dd"/>
+            </svg>
+        </div>
+    </div>
+
+<script>
+// 10道题目数组，在这里批量维护所有题目
+const questionList = [
+    // 前10题（原有题目）
+    {
+        answer: "triangle",
+        grid: [
+            ["square","triangle","plus","empty"],
+            ["empty","empty","empty","square"],
+            ["circle","empty","empty","plus"],
+            ["empty","empty","empty","question"]
+        ]
+    },
+    {
+        answer: "square",
+        grid: [
+            ["empty","empty","empty","circle"],
+            ["question","empty","empty","empty"],
+            ["circle","triangle","empty","plus"],
+            ["plus","empty","empty","square"]
+        ]
+    },
+    {
+        answer: "circle",
+        grid: [
+            ["empty","empty","empty","empty"],
+            ["triangle","empty","question","empty"],
+            ["empty","circle","empty","plus"],
+            ["plus","empty","empty","circle"]
+        ]
+    },
+    {
+        answer: "plus",
+        grid: [
+            ["triangle","empty","empty","plus"],
+            ["square","empty","circle","empty"],
+            ["empty","empty","empty","square"],
+            ["question","empty","empty","empty"]
+        ]
+    },
+    {
+        answer: "triangle",
+        grid: [
+            ["square","triangle","plus","empty"],
+            ["empty","empty","empty","square"],
+            ["circle","empty","empty","plus"],
+            ["empty","empty","empty","question"]
+        ]
+    },
+    {
+        answer: "circle",
+        grid: [
+            ["empty","plus","empty","empty"],
+            ["plus","triangle","circle","square"],
+            ["empty","question","empty","empty"],
+            ["empty","square","empty","empty"]
+        ]
+    },
+    {
+        answer: "circle",
+        grid: [
+            ["question","empty","empty","empty"],
+            ["plus","empty","empty","circle"],
+            ["square","empty","empty","empty"],
+            ["empty","plus","triangle","square"]
+        ]
+    },
+    {
+        answer: "triangle",
+        grid: [
+            ["empty","empty","square","empty"],
+            ["square","empty","plus","circle"],
+            ["plus","empty","triangle","empty"],
+            ["question","empty","empty","empty"]
+        ]
+    },
+    {
+        answer: "circle",
+        grid: [
+            ["triangle","empty","empty","question"],
+            ["empty","circle","empty","empty"],
+            ["square","empty","circle","empty"],
+            ["empty","empty","square","triangle"]
+        ]
+    },
+    {
+        answer: "circle",
+        grid: [
+            ["empty","empty","plus","circle"],
+            ["empty","question","empty","empty"],
+            ["empty","empty","circle","empty"],
+            ["empty","triangle","empty","plus"]
+        ]
+    },
+
+    // 新增8道题目（你刚发的截图）
+    {
+        answer: "triangle",
+        grid: [
+            ["empty","question","empty","empty"],
+            ["empty","circle","empty","empty"],
+            ["plus","triangle","circle","square"],
+            ["empty","plus","empty","empty"]
+        ]
+    },
+    {
+        answer: "triangle",
+        grid: [
+            ["empty","empty","empty","question"],
+            ["empty","triangle","empty","plus"],
+            ["circle","plus","empty","square"],
+            ["empty","square","empty","empty"]
+        ]
+    },
+    {
+        answer: "circle",
+        grid: [
+            ["empty","empty","empty","triangle"],
+            ["empty","question","plus","empty"],
+            ["square","empty","circle","empty"],
+            ["empty","empty","triangle","circle"]
+        ]
+    },
+    {
+        answer: "square",
+        grid: [
+            ["empty","empty","empty","circle"],
+            ["question","empty","empty","empty"],
+            ["circle","triangle","empty","plus"],
+            ["plus","empty","empty","square"]
+        ]
+    },
+    {
+        answer: "triangle",
+        grid: [
+            ["triangle","empty","empty","empty"],
+            ["plus","circle","empty","empty"],
+            ["square","empty","empty","empty"],
+            ["empty","plus","question","square"]
+        ]
+    },
+    {
+        answer: "square",
+        grid: [
+            ["triangle","empty","empty","empty"],
+            ["question","plus","empty","circle"],
+            ["circle","empty","empty","empty"],
+            ["empty","empty","empty","empty"]
+        ]
+    },
+    {
+        answer: "circle",
+        grid: [
+            ["empty","square","empty","triangle"],
+            ["empty","empty","circle","empty"],
+            ["square","circle","empty","empty"],
+            ["triangle","empty","empty","question"]
+        ]
+    },
+    {
+        answer: "square",
+        grid: [
+            ["empty","empty","question","circle"],
+            ["empty","square","empty","empty"],
+            ["square","empty","empty","triangle"],
+            ["empty","triangle","circle","empty"]
+        ]
+    }
+];
+
+let currentIndex = 0;
+let selectedCell = null;
+let isAnswering = false;
+const popupPanel = document.getElementById("popupPanel");
+const boardWrap = document.getElementById("boardWrap");
+
+// 图形SVG模板
+const shapeSvg = {
+    square: `<svg width="40" height="40" viewBox="0 0 100 100"><rect x="10" y="10" width="80" height="80" fill="#ee3311"/></svg>`,
+    triangle: `<svg width="40" height="40" viewBox="0 0 100 100"><polygon points="50,10 90,90 10,90" fill="#0050aa"/></svg>`,
+    plus: `<svg width="40" height="40" viewBox="0 0 100 100"><path d="M40,10 L60,10 L60,40 L90,40 L90,60 L60,60 L60,90 L40,90 L40,60 L10,60 L10,40 L40,40 Z" fill="#0088dd"/></svg>`,
+    circle: `<svg width="40" height="40" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="#608800"/></svg>`,
+    empty: "",
+    question: "?"
+};
+
+// 渲染当前题目棋盘
+function renderBoard(){
+    const q = questionList[currentIndex];
+    let html = "";
+    for(let r=0;r<4;r++){
+        for(let c=0;c<4;c++){
+            let type = q.grid[r][c];
+            if(type === "empty"){
+                html += `<div class="grid-cell empty"></div>`;
+            }else if(type === "question"){
+                html += `<div class="grid-cell empty question-cell">?</div>`;
+            }else{
+                html += `<div class="grid-cell locked">${shapeSvg[type]}</div>`;
+            }
+        }
+    }
+    boardWrap.innerHTML = html;
+    boardWrap.appendChild(popupPanel);
+    bindCellClick();
+}
+
+// 格子点击事件
+function bindCellClick(){
+    document.querySelectorAll(".grid-cell.empty").forEach(cell=>{
+        cell.onclick = function(ev){
+            if(isAnswering) return;
+            document.querySelectorAll(".grid-cell.empty").forEach(c=>c.classList.remove("active"));
+            this.classList.add("active");
+            selectedCell = this;
+            const rect = this.getBoundingClientRect();
+            const containerRect = boardWrap.getBoundingClientRect();
+            popupPanel.style.left = (rect.left - containerRect.left) + "px";
+            popupPanel.style.top = (rect.bottom - containerRect.top + 6) + "px";
+            popupPanel.style.display = "flex";
+        }
+    })
+}
+
+// 填充图形
+document.querySelectorAll(".popup-option-item").forEach(item=>{
+    item.onclick = function(){
+        if(!selectedCell) return;
+        selectedCell.innerHTML = this.innerHTML;
+        popupPanel.style.display = "none";
+    }
+})
+
+// 选项答题
+document.querySelectorAll(".option-item").forEach(opt=>{
+    opt.onclick = function(){
+        if(isAnswering) return;
+        isAnswering = true;
+        const choose = this.dataset.shape;
+        document.querySelectorAll(".option-item").forEach(o=>{
+            o.classList.remove("option-correct","option-wrong");
+        })
+        if(choose === questionList[currentIndex].answer){
+            this.classList.add("option-correct");
+        }else{
+            this.classList.add("option-wrong");
+        }
+        setTimeout(()=>{
+            // 切换下一题
+            currentIndex++;
+            if(currentIndex >= questionList.length){
+                alert("所有题目完成");
+                currentIndex = 0;
+            }
+            renderBoard();
+            document.querySelectorAll(".option-item").forEach(o=>{
+                o.classList.remove("option-correct","option-wrong");
+            })
+            popupPanel.style.display="none";
+            selectedCell = null;
+            isAnswering = false;
+        },800)
+    }
+})
+
+// 空白处关闭弹窗
+document.addEventListener("click",(ev)=>{
+    if(!ev.target.closest(".grid-cell.empty") && !ev.target.closest(".popup-option-wrap")){
+        popupPanel.style.display = "none";
+    }
+})
+
+// 倒计时
+let totalSec = 6 * 60;
+let timer = setInterval(()=>{
+    totalSec--;
+    if(totalSec <= 0){
+        clearInterval(timer);
+        alert("答题时间结束，自动交卷");
+        return;
+    }
+    let m = Math.floor(totalSec / 60).toString().padStart(2,"0");
+    let s = (totalSec % 60).toString().padStart(2,"0");
+    document.getElementById("timer").innerText = `${m}:${s}`;
+},1000);
+
+// 初始化第一题
+renderBoard();
+</script>
+</body>
+</html>

@@ -1,0 +1,33 @@
+{
+  "name": "aon-assessment",
+  "version": "1.0.0",
+  "main": "main.js",
+  "productName": "Aon测评系统",
+  "scripts": {
+    "dev": "electron .",
+    "build-mac": "electron-builder --mac dmg -c.mac.identity=null -c.mac.hardenedRuntime=false -c.mac.gatekeeperAssess=false"
+  },
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.1"
+  },
+  "build": {
+    "appId": "com.aon.assessment",
+    "mac": {
+      "target": "dmg",
+      "icon": "build/app.icns",
+      "identity": null,
+      "hardenedRuntime": false,
+      "gatekeeperAssess": false
+    },
+    "dmg": {
+      "title": "Aon测评系统",
+      "iconSize": 96
+    },
+    "files": [
+      "main.js",
+      "*.html",
+      "images/**/*"
+    ]
+  }
+}
