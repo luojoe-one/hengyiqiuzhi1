@@ -4,13 +4,15 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
-# 全开权限
 permissions: write-all
 
 jobs:
   build-mac-dmg:
     runs-on: macos-latest
     timeout-minutes: 20
+    # 全局注入GH_TOKEN，所有步骤生效
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: 拉取项目源码
         uses: actions/checkout@v4
@@ -27,11 +29,12 @@ jobs:
       - name: 打包Mac .dmg镜像
         run: npm run build-mac
 
-      # 关键：把内置GITHUB_TOKEN赋值给GH_TOKEN，解决v4校验报错
+      - name: 检查打包输出
+        run: ls -la dist
+
+      # v4 无需额外env，全局已经注入GH_TOKEN
       - name: 上传dmg安装包
         uses: actions/upload-artifact@v4
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           name: Aon测评_Mac安装包
           path: dist/*.dmg
