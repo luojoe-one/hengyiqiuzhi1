@@ -2,7 +2,7 @@
   "name": "aon-assessment",
   "version": "1.0.0",
   "main": "main.js",
-  "productName": "Aon测评系统",
+  "productName": "测评系统",
   "scripts": {
     "dev": "electron .",
     "build-mac": "electron-builder --mac dmg -c.mac.identity=null -c.mac.hardenedRuntime=false -c.mac.gatekeeperAssess=false"
@@ -21,7 +21,7 @@
       "gatekeeperAssess": false
     },
     "dmg": {
-      "title": "Aon测评系统",
+      "title": "测评系统",
       "iconSize": 96
     },
     "files": [
