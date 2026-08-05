@@ -4,11 +4,9 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
-# 关键：给内置GITHUB_TOKEN授予读写artifact权限
 permissions:
   contents: read
   actions: write
-  pull-requests: write
 
 jobs:
   build-mac-dmg:
@@ -30,9 +28,9 @@ jobs:
       - name: 打包Mac .dmg镜像
         run: npm run build-mac
 
-      # 上传产物，自动使用内置GITHUB_TOKEN，无需手动配置PAT
+      # 降级到v3，彻底消除GH_TOKEN报错，兼容性更稳
       - name: 上传dmg安装包
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v3
         with:
           name: Aon测评_Mac安装包
           path: dist/*.dmg
