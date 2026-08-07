@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>欢迎参加此评估</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Microsoft YaHei", system-ui, sans-serif;
+        }
+        body {
+            background-color: #ffffff;
+            padding: 32px 40px;
+        }
+        h1 {
+            font-size: 28px;
+            font-weight: 600;
+            color: #111;
+            margin-bottom: 12px;
+        }
+        .desc-text {
+            font-size: 16px;
+            color: #333;
+            line-height: 1.6;
+            max-width: 900px;
+            margin-bottom: 28px;
+        }
+        .header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        .title-left {
+            font-size: 22px;
+            font-weight: 600;
+        }
+        .progress-wrap {
+            text-align: right;
+        }
+        .progress-label {
+            font-size: 16px;
+            color: #333;
+            display: block;
+            margin-bottom: 6px;
+        }
+        .progress-bar-group {
+            display: flex;
+            gap: 4px;
+        }
+        .progress-seg {
+            width: 170px;
+            height: 16px;
+            background-color: #e4e6e9;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            transition: background-color 0.3s;
+        }
+        /* 任务完成 蓝色填充 */
+        .progress-seg.finish {
+            background-color: #0078d4;
+        }
+        .time-count {
+            font-size:16px;
+            float:right;
+            margin-left:24px;
+        }
+        /* 顶部蓝色提示框 */
+        .notice-box {
+            background-color: #e6f3fc;
+            border: 1px solid #c8e3f7;
+            padding: 12px 16px;
+            border-radius: 4px;
+            margin-bottom: 24px;
+            font-size: 16px;
+            color:#222;
+        }
+        /* 任务行样式 */
+        .task-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .task-item {
+            display: flex;
+            align-items: center;
+            border: 1px solid #e0e2e6;
+            min-height: 76px;
+            position: relative;
+        }
+        /* 左侧蓝色竖条 */
+        .task-left-line {
+            width: 5px;
+            height: 100%;
+            background-color: #0078d4;
+        }
+        .task-name {
+            font-size:16px;
+            padding: 0 16px;
+            min-width: 140px;
+        }
+        .arrow-icon {
+            color:#444;
+            padding:0 24px;
+        }
+        .task-time {
+            font-size:15px;
+            color:#333;
+            min-width: 110px;
+        }
+        select.lang-select {
+            padding: 6px 8px;
+            font-size:15px;
+            border:1px solid #c9cdd2;
+            border-radius:4px;
+            margin:0 28px;
+            min-width:160px;
+        }
+        .btn-start {
+            margin-left: auto;
+            margin-right:16px;
+            background-color:#1967c4;
+            color:white;
+            border:none;
+            font-size:16px;
+            padding: 9px 34px;
+            border-radius:3px;
+            cursor: pointer;
+        }
+        .btn-start:hover {
+            background-color:#1456a5;
+        }
+        /* 完成状态按钮样式 */
+        .btn-start.finished {
+            background-color:#28a745;
+            cursor: default;
+        }
+        /* 全屏水印 hengyiqiuzhi */
+body::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 999999;
+    pointer-events: none; /* 穿透点击，不影响答题 */
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="280" height="180"><text x="30" y="90" font-size="24" fill="rgba(120,120,120,0.08)" transform="rotate(-45 140 90)">hengyiqiuzhi</text></svg>');
+    background-repeat: repeat;
+}
+    </style>
+</head>
+<body>
+    <h1>欢迎参加此评估</h1>
+    <div class="desc-text">
+        以下是评估任务清单。请完成所有任务。<br>
+        确保您可以全神贯注而不受干扰地完成评估。在开始每项任务之前，请先选择您最熟悉的语言。(如果适用)
+    </div>
+
+    <div class="header-row">
+        <div class="title-left">待完成的任务</div>
+        <div class="progress-wrap">
+            <span class="progress-label">评估进度 <span class="time-count">0 / 50 分钟</span></span>
+            <div class="progress-bar-group">
+                <div class="progress-seg" data-task="1"></div>
+                <div class="progress-seg" data-task="2"></div>
+                <div class="progress-seg" data-task="3"></div>
+                <div class="progress-seg" data-task="4"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="notice-box">
+        注：如果您遇到评估被锁定的情况，评估将在 12 个小时内解锁。
+    </div>
+
+    <div class="task-list">
+        <!-- 任务1 -->
+        <div class="task-item" data-task-id="1">
+            <div class="task-left-line"></div>
+            <div class="task-name">⚖ 工作相关行为</div>
+            <div class="arrow-icon">⌄</div>
+            <div class="task-time">🕒 ~23 分钟</div>
+            <select class="lang-select">
+                <option>简体中文 (CN)</option>
+            </select>
+            <button class="btn-start" data-target="1.5.1.html">开始 &gt;</button>
+        </div>
+        <!-- 任务2 -->
+        <div class="task-item" data-task-id="2">
+            <div class="task-left-line"></div>
+            <div class="task-name">⚖ 数字推理</div>
+            <div class="arrow-icon">⌄</div>
+            <div class="task-time">🕒 ~9 分钟</div>
+            <select class="lang-select">
+                <option>简体中文 (CN)</option>
+            </select>
+            <button class="btn-start" data-target="1.2.4.html">开始 &gt;</button>
+        </div>
+        <!-- 任务3 -->
+        <div class="task-item" data-task-id="3">
+            <div class="task-left-line"></div>
+            <div class="task-name">⚖ 文字推理</div>
+            <div class="arrow-icon">⌄</div>
+            <div class="task-time">🕒 ~9 分钟</div>
+            <select class="lang-select">
+                <option>简体中文 (CN)</option>
+            </select>
+            <button class="btn-start" data-target="1.3.1.html">开始 &gt;</button>
+        </div>
+        <!-- 任务4 -->
+        <div class="task-item" data-task-id="4">
+            <div class="task-left-line"></div>
+            <div class="task-name">⚖ 逻辑推理</div>
+            <div class="arrow-icon">⌄</div>
+            <div class="task-time">🕒 ~9 分钟</div>
+            <select class="lang-select">
+                <option>简体中文 (CN)</option>
+            </select>
+            <button class="btn-start" data-target="1.4.2.html">开始 &gt;</button>
+        </div>
+    </div>
+
+<script>
+
+    window.onload = async ()=>{
+    const licenseData = await ipcRenderer.invoke('get-license');
+    // 只判断是否存在激活凭证，不再校验机器码
+    if(!licenseData){
+        window.location.href = "activate.html";
+        return;
+    }
+}
+// 存储key
+const STORAGE_KEY = 'assessment_tasks';
+// 获取已完成任务列表
+function getFinishedTasks(){
+    const data = localStorage.getItem(STORAGE_KEY);
+    return data ? JSON.parse(data) : [];
+}
+// 保存完成任务
+function saveFinishedTasks(list){
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+}
+// 更新页面进度UI
+function renderProgress(){
+    const finished = getFinishedTasks();
+    // 更新进度条分段
+    document.querySelectorAll('.progress-seg').forEach(seg=>{
+        const tid = seg.dataset.task;
+        if(finished.includes(tid)){
+            seg.classList.add('finish');
+        }else{
+            seg.classList.remove('finish');
+        }
+    })
+    // 更新按钮状态
+    document.querySelectorAll('.btn-start').forEach(btn=>{
+        const taskItem = btn.closest('.task-item');
+        const tid = taskItem.dataset.taskId;
+        if(finished.includes(tid)){
+            btn.classList.add('finished');
+            btn.innerText = '✅ 已完成';
+        }else{
+            btn.classList.remove('finished');
+            btn.innerText = '开始 >';
+        }
+    })
+}
+
+// 标记任务完成（供子页面调用）
+window.markTaskFinished = function(taskId){
+    let list = getFinishedTasks();
+    if(!list.includes(taskId)){
+        list.push(taskId);
+        saveFinishedTasks(list);
+        renderProgress();
+    }
+}
+
+// 按钮跳转事件
+document.querySelectorAll('.btn-start').forEach(btn=>{
+    btn.addEventListener('click', function(){
+        const taskItem = this.closest('.task-item');
+        const tid = taskItem.dataset.taskId;
+        const targetUrl = this.dataset.target;
+        // 已完成可以选择禁止跳转或者允许再次进入
+        if(this.classList.contains('finished')){
+            alert("该任务您已经完成！");
+            return;
+        }
+        // 跳转任务页面
+        window.location.href = targetUrl;
+    })
+})
+
+// 页面加载初始化
+renderProgress();
+
+// =====【重要说明】=====
+// 在你的 page1.html / page2.html 任务页面，完成测评后调用下面代码即可点亮进度：
+// opener.markTaskFinished("1"); //数字对应任务id
+// window.close(); //关闭任务页面，回到主页
+</script>
+</body>
+</html>

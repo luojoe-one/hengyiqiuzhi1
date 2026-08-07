@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数字推理</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Microsoft YaHei", sans-serif;
+        }
+        body {
+            background-color: #ffffff;
+        }
+        /* 顶部蓝色导航栏 */
+        .top-nav {
+            background-color: #0066bb;
+            color: white;
+            height: 60px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            font-size: 18px;
+        }
+        .nav-left {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .nav-right {
+            display: flex;
+            gap: 30px;
+        }
+        /* 顶部图标按钮组【6个数据表切换】 */
+        .icon-group {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-top: 40px;
+        }
+        .icon-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background-color: #dddddd;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            box-shadow: 0 4px 6px #00000022;
+            cursor: pointer;
+            transition: all 0.2s;
+            position:relative;
+            z-index:10;
+        }
+        .icon-btn.active {
+            background-color: #666666;
+            color: white;
+        }
+        /* 表格标题 */
+        h2 {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 22px;
+        }
+        /* 表格容器，固定高度+内部滚动，保留上下滑动功能 */
+        .table-wrap {
+            width: 90%;
+            height: 420px;
+            margin: 0 auto;
+            overflow-y: auto;
+            position: relative;
+        }
+        table {
+            border-collapse: collapse;
+            margin: 15px auto 0;
+            font-size: 17px;
+            width: 95%;
+        }
+        td {
+            border: 1px solid #ddd;
+            padding: 12px 20px;
+        }
+        .image-box{
+            width: 100%;
+            text-align: center;
+            padding-top:15px;
+        }
+        .image-box img{
+            max-width:95%;
+            /* 图片缩放0.5倍，居中显示 */
+            transform: scale(0.5);
+            transform-origin: center top;
+        }
+        /* 题干文字居中 */
+        .question-text {
+            margin: 40px 30px;
+            font-size: 20px;
+            line-height: 1.7;
+            min-height: 80px;
+            text-align: center;
+        }
+        /* 底部选项按钮 */
+        .option-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin-top: 30px;
+            position:relative;
+            z-index:10;
+        }
+        .option-btn {
+            width: 260px;
+            height: 65px;
+            font-size: 20px;
+            border: 1px solid #cccccc;
+            border-radius: 6px;
+            background-color: #f4f4f4;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .option-btn.checked {
+            background-color: #dddddd;
+        }
+        /* 右下角垂直按钮组 */
+        .float-right-buttons {
+            position: fixed;
+            right: 30px;
+            bottom: 180px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            z-index:10;
+        }
+        .float-btn {
+            width: 48px;
+            height: 48px;
+            border: 1px solid #ccc;
+            background-color: #ffffff;
+            border-radius: 4px;
+            font-size: 20px;
+            cursor: pointer;
+        }
+        /* ==========答题卡弹窗样式========== */
+        .mask-layer{
+            position: fixed;
+            top:0;left:0;right:0;bottom:0;
+            background:rgba(0,0,0,0.4);
+            display:none;
+            z-index:99;
+        }
+        .answer-card{
+            width:600px;
+            background:#fff;
+            margin:120px auto;
+            padding:24px;
+            border-radius:8px;
+        }
+        .card-title{
+            font-size:22px;
+            text-align:center;
+            margin-bottom:20px;
+        }
+        .question-grid{
+            display:grid;
+            grid-template-columns: repeat(9, 1fr);
+            gap:10px;
+        }
+        .q-item{
+            width:44px;
+            height:44px;
+            border:1px solid #ccc;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            cursor:pointer;
+            border-radius:4px;
+        }
+        .q-item.done{
+            background:#b9d6f2;
+        }
+        .q-item.current{
+            border:2px solid #0066bb;
+        }
+        .close-card{
+            display:block;
+            margin:24px auto 0;
+            padding:8px 32px;
+            font-size:17px;
+            cursor:pointer;
+        }
+        /* 成绩弹窗 */
+        .result-mask{
+            position: fixed;
+            top:0;left:0;right:0;bottom:0;
+            background:rgba(0,0,0,0.6);
+            display:none;
+            z-index:100;
+        }
+        .result-box{
+            width:450px;
+            background:#fff;
+            margin:150px auto;
+            padding:30px;
+            border-radius:10px;
+            text-align:center;
+        }
+        .result-box h3{
+            font-size:24px;
+            margin-bottom:20px;
+        }
+        .result-box p{
+            font-size:18px;
+            line-height:2;
+        }
+        .restart-btn{
+            margin-top:20px;
+            padding:10px 30px;
+            font-size:17px;
+            cursor:pointer;
+        }
+        /* 全屏水印 hengyiqiuzhi */
+body::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 999999;
+    pointer-events: none; /* 穿透点击，不影响答题 */
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="280" height="180"><text x="30" y="90" font-size="24" fill="rgba(120,120,120,0.08)" transform="rotate(-45 140 90)">hengyiqiuzhi</text></svg>');
+    background-repeat: repeat;
+}
+    </style>
+</head>
+<body>
+    <!-- 答题卡遮罩弹窗 -->
+    <div class="mask-layer" id="mask">
+        <div class="answer-card">
+            <div class="card-title">答题卡 1~18题</div>
+            <div class="question-grid" id="grid-container"></div>
+            <button class="close-card" id="close-card">关闭</button>
+        </div>
+    </div>
+
+    <!-- 成绩结果弹窗 -->
+    <div class="result-mask" id="resultMask">
+        <div class="result-box">
+            <h3>答题结束</h3>
+            <p id="resultText"></p>
+            <button class="restart-btn" id="restartBtn">重新开始</button>
+        </div>
+    </div>
+
+    <!-- 顶部导航栏 -->
+    <div class="top-nav">
+        <div class="nav-left">
+            <span>☰</span>
+            <span></span>
+            <span></span>
+            <span>数字推理</span>
+        </div>
+        <div class="nav-right">
+            <span id="timer">06:00</span>
+            <span id="page-index">1 / 18</span>
+        </div>
+    </div>
+
+    <!-- 顶部图标按钮【6个数据表切换】 -->
+    <div class="icon-group">
+        <div class="icon-btn active" data-table="0">💰</div>
+        <div class="icon-btn" data-table="1">💰</div>
+        <div class="icon-btn" data-table="2">📈</div>
+        <div class="icon-btn" data-table="3">📃</div>
+        <div class="icon-btn" data-table="4">🤝</div>
+        <div class="icon-btn" data-table="5">🔭</div>
+    </div>
+
+    <h2 id="table-title">收益</h2>
+
+    <!-- 表格区域：内部滚动 -->
+    <div class="table-wrap" id="table-scroll">
+        <div id="table-content"></div>
+    </div>
+
+    <!-- 题干 -->
+    <div class="question-text" id="question-content">
+        在第4个财政年度，爱威格有限公司在“来自控股份额的利润/亏损(-)”方面遭遇了亏损。
+    </div>
+
+    <!-- 底部选项 -->
+    <div class="option-buttons">
+        <div class="option-btn" data-ans="1">
+            <span>✔</span>
+            <span>正确</span>
+        </div>
+        <div class="option-btn" data-ans="2">
+            <span>×</span>
+            <span>错误</span>
+        </div>
+        <div class="option-btn" data-ans="3">
+            <span>□</span>
+            <span>无法判断</span>
+        </div>
+    </div>
+
+    <!-- 右下角垂直按钮 -->
+    <div class="float-right-buttons">
+        <button class="float-btn" id="btn-prev">🔼</button>
+        <button class="float-btn" id="btn-menu">☰</button>
+        <button class="float-btn" id="btn-next">🔽</button>
+    </div>
+
+<script>
+document.addEventListener('DOMContentLoaded',function(){
+// 素材图片配置
+const tableData = [
+    {title:"收益",type:"image",src:"images/E.png"},
+    {title:"成本",type:"image",src:"images/F.png"},
+    {title:"市场份额",type:"image",src:"images/A.png"},
+    {title:"员工",type:"image",src:"images/B.png"},
+    {title:"股权回报",type:"image",src:"images/C.png"},
+    {title:"预测",type:"image",src:"images/D.png"}
+];
+
+// =========在这里填写题目 & 标准答案=========
+// ans: 1正确，2错误，3无法判断
+const questionList = [
+    {text:"在第4个财政年度，爱威格有限公司在“来自控股份额的利润/亏损(-)”方面遭遇了亏损。",answer:2},
+    {text:"从第4到第6个财政年度，爱威格有限公司的员工数量在德国地区增长最多。",answer:2},
+    {text:"爱威格有限公司在第4个财政年度比第5个财政年度在大洋洲地区多雇佣1,000名员工。",answer:2},
+    {text:"金广公司和标美公司在“女性化妆品与身体护理”部分的市场份额加起来约为74.000百万欧元左右。",answer:2},
+    {text:"在第6个财政年度，标美公司股票的股权回报比在第7个财政年度的两倍还高。",answer:1},
+    {text:"在第5个财政年度，爱威格有限公司来自“女士”化妆品系列的收益减去其相应的市场营销与分销支出大约为2.000百万欧元。",answer:2},
+    {text:"在第6个财政年度，爱威格有限公司比第7个财政年度雇佣的总员工大约少1,000人。",answer:2},
+    {text:"在第7个财政年度，罗腾有限公司股票的股权回报比第2个财政年度高。",answer:2},
+    {text:"在第7个财政年度，除了人员成本，冲销账目是爱威格有限公司最高的支出。",answer:2},
+    {text:"标美公司和爱威格有限公司在“女性化妆品与身体护理”部分的市场份额加起来约为55%。",answer:2},
+    {text:"“男士”化妆品系列的市场份额预计将持续上涨直到财政年度FY+5。",answer:2},
+    {text:"在第6个财政年度，爱威格有限公司产生的租金大约占总成本5%左右。",answer:3},
+    {text:"在第3到第7个财政年度，标美公司股票的股权回报持续上涨。",answer:2},
+    {text:"比起第5和第6个财政年度，第8个财政年度爱威格有限公司在外部服务的支出显著下降了。",answer:2},
+    {text:"罗腾有限公司和标美公司在“女性化妆品与身体护理”部分的市场份额加起来不到460,000百万欧元。",answer:1},
+    {text:"在第4个财政年度，爱威格有限公司在”伤口处理和足部护理”产品系列下所获收益超过其总收益的十分之一。",answer:1},
+    {text:"在下个财政年度(FY+1)，“男士”化妆品系列的市场份额预计将比当前财政年度(FV)高出2%。",answer:3},
+    {text:"如果当下的趋势持续下去，“容光焕发”化妆品系列的市场份额在财政年度FY+4将会超过25%。",answer:3}
+];
+
+let currentTableIdx = 0;
+let currentQuestionIdx = 0;
+const totalQuestion = questionList.length;
+let answerRecord = Array(totalQuestion).fill(0); //0未作答,1/2/3选项
+let submitFlag = false; //是否已经交卷，防止重复计算
+
+// 倒计时 6分钟
+let totalSeconds = 6 * 60;
+let timerInterval;
+
+function startTimer(){
+    timerInterval = setInterval(()=>{
+        if(submitFlag) return;
+        totalSeconds--;
+        if(totalSeconds <= 0){
+            clearInterval(timerInterval);
+            autoSubmit(); //超时自动交卷
+            return;
+        }
+        let m = Math.floor(totalSeconds / 60);
+        let s = totalSeconds % 60;
+        document.getElementById("timer").textContent = `${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+    },1000);
+}
+startTimer();
+
+// 渲染图片
+function renderTable(idx){
+    const info = tableData[idx];
+    document.getElementById("table-title").innerText = info.title;
+    const container = document.getElementById("table-content");
+    container.innerHTML = "";
+    if(info.type === "table"){
+        let html = "<table>";
+        info.rows.forEach(row=>{
+            html += "<tr>";
+            row.forEach(cell=> html += `<td>${cell}</td>`);
+            html += "</tr>";
+        });
+        html += "</table>";
+        container.innerHTML = html;
+    }else{
+        container.innerHTML = `<div class="image-box"><img src="${info.src}" alt="${info.title}"></div>`;
+    }
+    document.getElementById("table-scroll").scrollTop = 0;
+}
+renderTable(0);
+
+// 渲染当前题目
+function renderQuestion(){
+    if(submitFlag) return;
+    const q = questionList[currentQuestionIdx];
+    document.getElementById("question-content").innerText = q.text;
+    document.getElementById("page-index").innerText = `${currentQuestionIdx+1} / ${totalQuestion}`;
+    //清除选中
+    document.querySelectorAll(".option-btn").forEach(opt=>opt.classList.remove("checked"));
+    const selected = answerRecord[currentQuestionIdx];
+    if(selected > 0){
+        document.querySelector(`.option-btn[data-ans="${selected}"]`).classList.add("checked");
+    }
+    refreshAnswerCard();
+}
+renderQuestion();
+
+// 更新答题卡
+function refreshAnswerCard(){
+    const gridContainer = document.getElementById("grid-container");
+    gridContainer.innerHTML = "";
+    for(let i=0;i<totalQuestion;i++){
+        const div = document.createElement("div");
+        div.className="q-item";
+        div.innerText = i+1;
+        if(answerRecord[i]!==0) div.classList.add("done");
+        if(i === currentQuestionIdx) div.classList.add("current");
+        div.dataset.index = i;
+        gridContainer.appendChild(div);
+    }
+}
+
+// 自动交卷函数
+function autoSubmit(){
+    if(submitFlag) return;
+    submitFlag = true;
+    clearInterval(timerInterval);
+
+    let rightCount = 0;
+    let answered = 0;
+    for(let i=0;i<totalQuestion;i++){
+        const userAns = answerRecord[i];
+        const stdAns = questionList[i].answer;
+        if(userAns !==0){
+            answered++;
+            if(userAns === stdAns) rightCount++;
+        }
+    }
+    let wrong = answered - rightCount;
+    let unAnswered = totalQuestion - answered;
+    let rate = answered === 0 ? 0 : (rightCount / answered * 100).toFixed(1);
+
+    const resultHtml = `
+        总题目数：${totalQuestion}<br>
+        已作答：${answered} 题<br>
+        未作答：${unAnswered} 题<br>
+        答对：${rightCount} 题 &nbsp;&nbsp;答错：${wrong} 题<br>
+        正确率：${rate} %
+    `;
+    document.getElementById("resultText").innerHTML = resultHtml;
+    document.getElementById("resultMask").style.display = "block";
+}
+
+// 事件委托
+document.body.addEventListener('click',function(e){
+    if(submitFlag) return;
+
+    // 切换数据表
+    const tableBtn = e.target.closest('.icon-btn');
+    if(tableBtn){
+        document.querySelectorAll(".icon-btn").forEach(b=>b.classList.remove("active"));
+        tableBtn.classList.add("active");
+        currentTableIdx = Number(tableBtn.dataset.table);
+        renderTable(currentTableIdx);
+        return;
+    }
+
+    // 选择答案
+    const optBtn = e.target.closest('.option-btn');
+    if(optBtn){
+        document.querySelectorAll(".option-btn").forEach(o=>o.classList.remove("checked"));
+        optBtn.classList.add("checked");
+        answerRecord[currentQuestionIdx] = Number(optBtn.dataset.ans);
+        refreshAnswerCard();
+        return;
+    }
+
+    // 上一题
+    if(e.target.closest('#btn-prev')){
+        if(currentQuestionIdx > 0){
+            currentQuestionIdx--;
+            renderQuestion();
+        }
+        return;
+    }
+
+    // 下一题
+    if(e.target.closest('#btn-next')){
+        if(currentQuestionIdx < totalQuestion -1){
+            currentQuestionIdx++;
+            renderQuestion();
+        }else{
+            // 最后一题点击下一题 → 全部完成，自动交卷
+            autoSubmit();
+        }
+        return;
+    }
+
+    // 打开答题卡
+    if(e.target.closest('#btn-menu')){
+        document.getElementById("mask").style.display="block";
+        return;
+    }
+    //关闭答题卡
+    if(e.target.closest('#close-card')){
+        document.getElementById("mask").style.display="none";
+        return;
+    }
+
+    // 答题卡选题跳转
+    const qCell = e.target.closest('.q-item');
+    if(qCell){
+        currentQuestionIdx = Number(qCell.dataset.index);
+        document.getElementById("mask").style.display="none";
+        renderQuestion();
+        return;
+    }
+});
+
+// 重新开始按钮
+document.getElementById("restartBtn").addEventListener("click",()=>{
+    location.reload();
+});
+
+});
+</script>
+</body>
+</html>

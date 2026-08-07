@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>职业相关行为</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Microsoft YaHei", system-ui, sans-serif;
+        }
+        body {
+            background-color: #ffffff;
+            padding: 40px 48px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        /* 倒计时 */
+        .timer-box {
+            text-align: right;
+            font-size: 16px;
+            color: #d63031;
+            margin-bottom: 12px;
+        }
+        /* 顶部进度条 */
+        .progress-bar-wrap {
+            width: 100%;
+            height: 6px;
+            background: #e6e6e6;
+            border-radius: 3px;
+            margin-bottom: 48px;
+        }
+        .progress-fill {
+            height: 100%;
+            width: 5%;
+            background: #999999;
+            border-radius: 3px;
+            transition: 0.4s ease;
+        }
+        .questions-wrap {
+            display: flex;
+            flex-direction: column;
+            gap: 46px;
+        }
+        /* 整行容器：左题 + 中线 + 右题 + 共用一条滑块 */
+        .question-row {
+            display: grid;
+            grid-template-columns: 1fr 1px 1fr;
+            gap: 0;
+            align-items: stretch;
+            row-gap: 20px;
+        }
+        .q-left {
+            grid-column: 1;
+            text-align: left;
+            padding-right: 30px;
+        }
+        .q-divider {
+            grid-column: 2;
+            background: #cccccc;
+        }
+        .q-right {
+            grid-column: 3;
+            text-align: right;
+            padding-left: 30px;
+        }
+        /* 滑块区域整行跨三列 */
+        .slider-full-row {
+            grid-column: 1 / 4;
+            position: relative;
+            height: 44px;
+            display: flex;
+            align-items: center;
+        }
+        .q-text {
+            font-size: 17px;
+            color: #333;
+            line-height: 1.55;
+        }
+        .slider-line {
+            width: 100%;
+            height: 2px;
+            background-color: #cccccc;
+            position: absolute;
+        }
+        .dot-group {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            position: relative;
+        }
+        .dot {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            border: 2px solid #cccccc;
+            background: #fff;
+            z-index: 2;
+            cursor: pointer;
+        }
+        .dot.selected {
+            background-color: #aaaaaa;
+            border-color: #aaaaaa;
+        }
+        .arrow-left, .arrow-right {
+            position: absolute;
+            top: 12px;
+            font-size: 20px;
+            color: #bbbbbb;
+            z-index: 3;
+        }
+        .arrow-left {left: -12px;}
+        .arrow-right {right: -12px;}
+        /* 底部标签整行跨三列 */
+        .label-full-row {
+            grid-column: 1 / 4;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 4px;
+        }
+        .label-text {
+            font-size: 14px;
+            color: #555555;
+            text-align: center;
+            width: 13%;
+        }
+        /* 全屏水印 hengyiqiuzhi */
+body::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 999999;
+    pointer-events: none; /* 穿透点击，不影响答题 */
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="280" height="180"><text x="30" y="90" font-size="24" fill="rgba(120,120,120,0.08)" transform="rotate(-45 140 90)">hengyiqiuzhi</text></svg>');
+    background-repeat: repeat;
+}
+    </style>
+</head>
+<body>
+    <div class="timer-box" id="timerText">剩余时间：23:00</div>
+    <div class="progress-bar-wrap">
+        <div class="progress-fill" id="progressBar"></div>
+    </div>
+
+    <div class="questions-wrap" id="questionsBox"></div>
+
+<script>
+const TOTAL_ALL_QUESTIONS = 100;
+const PAGE_SIZE = 5;
+const STEP_PER_PAGE = 5;
+const MAX_TIME_SECONDS = 23 * 60; // 23分钟 = 1380秒
+let currentPageIndex = 0;
+let answerRecord = {};
+let remainSeconds = MAX_TIME_SECONDS;
+let timerInterval = null;
+
+const questionBank = [
+    {
+        id:1,
+        left:"我喜欢团队工作。但这取决于团队成员的构成。",
+        right:"即便身处困境。我也能保持乐观。"
+    },
+    {
+        id:2,
+        left:"我有时候喜欢去结识些新面孔。",
+        right:"我同情那些诸事不顺的人,并会尽力让他们感觉好些。"
+    },
+    {
+        id:3,
+        left:"当别人给我明确的指导时候;我的工作效果最好。",
+        right:"无论遇到了什么问题,我总能完成任务。"
+    },
+    {
+        id:4,
+        left:"我总是在工作中十分努力但我并不是以事业为重的那种人。",
+        right:"我计划在职业生涯中尽可能高地升迁。而且会一直努力直到实现目标。"
+    },
+    {
+        id:5,
+        left:"即使是在压力情况下。我也能保持冷静。",
+        right:"我常常能说服别人认同我的观点。"
+    },
+    {
+        id:6,
+        left:"我总是知道自己生气或烦恼的根源。",
+        right:"我希望能以旁观者的视角来观察自己，从而更好地理解自己为何会做出那些言行举动。"
+    },
+    {
+        id:7,
+        left:"在大多数情况下,我是个非常有积极性的人。",
+        right:"需要别人帮忙的时候我会对他们更好些。"
+    },
+    {
+        id:8,
+        left:"我喜欢尽可能多地学习与自己工作相关的内容。即使有些知识对工作表现没有直接影响。",
+        right:"我是个十分注重细节的人。"
+    },
+    {
+        id:9,
+        left:"通常我喜欢按照惯例做事。",
+        right:"我能领导一个小团队。但要负责一整个部门。对我来说压力太大。"
+    },
+    {
+        id:10,
+        left:"我很少感受到自己情绪上的高低起伏。",
+        right:"当我非常烦躁时。我有时难以控制自己的情绪。"
+    },
+    {
+        id:11,
+        left:"我一贯会去分享自己的看法,哪怕这么做可能对我不利。",
+        right:"因为我不想让别人感到不快。"
+    },
+    {
+        id:12,
+        left:"我不觉得自己比其他人更优秀。",
+        right:"只要团队的前进方向正确。我就喜欢团队工作。"
+    },
+    {
+        id:13,
+        left:"面临挑战的时候;我会不断努力直到成功。",
+        right:"我会尽力去了解我不熟悉的事物。"
+    },
+    {
+        id:14,
+        left:"即使事情末按计划进行。我仍能保持愉快的心情。",
+        right:"我有时会悲观。"
+    },
+    {
+        id:15,
+        left:"当事情没有按照我的方式进行时,我会感到生气和沮丧。",
+        right:"对于某些事。我常常不确定自己为什么会有那样的感受。"
+    },
+    {
+        id:16,
+        left:"能用新方式做事固然好,但对我来说并不容易。",
+        right:"我乐于尝试新事物并尽可能地做些新的事情。"
+    },
+    {
+        id:17,
+        left:"每天总有些事情会让我感到快乐。",
+        right:"只要有必要。我就乐意以身作则。"
+    },
+    {
+        id:18,
+        left:"我通常都能知道自己对某些事情会怎么反应以及这将会如何影响他人。",
+        right:"我竭尽所能实现自己的目标即使有时会很有难度。"
+    },
+    {
+        id:19,
+        left:"我宁愿做自己擅长的任务,而不是尝试可能会有难度的新事物。",
+        right:"我知道我的某个观点大家都不会认同。所以我有时候也很纠结要不要把这个观点讲出来。"
+    },
+    {
+        id:20,
+        left:"跟不太熟悉的人在一起时我通常比较安静。",
+        right:"我乐于跟人交谈。"
+    },
+    {
+        id:21,
+        left:"有时我对待工作非常缜密,而有些时候则没那么周全。",
+        right:"同事们都认为我很有条理。"
+    },
+    {
+        id:22,
+        left:"有人来访时我会尽全力让对方感受到欢迎的氛围。",
+        right:"当工作内容稳定且按预期进行时,我能发挥出最佳水平。"
+    },
+    {
+        id:23,
+        left:"我非常清楚我的同事对我的看法。",
+        right:"我一向能够很好。准时地完成任务。"
+    },
+    {
+        id:24,
+        left:"有些技能我是愿意去学的,但花时间钻研自己擅长的领域会更有意义。",
+        right:"我常在工作中主动要求完成比较难的任务,这样我就可以学到更多东西。"
+    },
+    {
+        id:25,
+        left:"我喜欢思考事物的运作方式,尽管有时会让别人感到奇怪。",
+        right:"我善于体察别人的感受。"
+    },
+    {
+        id:26,
+        left:"我通常是个沉稳的人。",
+        right:"我喜欢了解复杂的问题。"
+    },
+    {
+        id:27,
+        left:"我总是会把东西归放原位。",
+        right:"如果有人征求我的意见,我会说出自己的看法。但我并不总是把心里所想的都说出来。"
+    },
+    {
+        id:28,
+        left:"我总是愿意倾听别人的烦恼。",
+        right:"与某些人保持一定距离是很重要的。"
+    },
+    {
+        id:29,
+        left:"我讲给同事们听的内容是他们想要听的。以便增加他们帮我晌可能性。",
+        right:"建立社交关系对我来说是件困难的事。"
+    },
+    {
+        id:30,
+        left:"工作中，我喜欢组织与控制任务流程。",
+        right:"我可以成为一名好领导，但我对与之俱来的所有责任不感兴趣。"
+    },
+    {
+        id:31,
+        left:"学习新事物。新方法可能要花费一些时间。但通常来说这是值得的。",
+        right:"我常常感觉自己可以应对大多数的挑战。"
+    },
+    {
+        id:32,
+        left:"我的坚持不懈使我能够完成那些别人觉得不可能做到的任务。",
+        right:"我喜欢与人合作来实现共同目标。"
+    },
+    {
+        id:33,
+        left:"我不会介意朋友或家人向其他人夸耀我。",
+        right:"因为有求于人而假装喜欢对方是不对的。"
+    },
+    {
+        id:34,
+        left:"我能在短时间内提出很多富有创造力的构想。",
+        right:"我更擅长把想法落实到行动中，而不仅仅是提出新的想法。"
+    },
+    {
+        id:35,
+        left:"我实际上没有什么长远的职业目标。",
+        right:"我很少会为陌生人的不幸而难过。"
+    },
+    {
+        id:36,
+        left:"总是依赖别人是很难把事做好的。",
+        right:"我最大的优势之一就是善于团队协作。"
+    },
+    {
+        id:37,
+        left:"我喜欢从事能从中学到很多的挑战性工作。",
+        right:"我既喜欢跟老朋友在一起,也喜欢结交新朋友。"
+    },
+    {
+        id:38,
+        left:"即使别人不同意我的观点;我也会坚定自己的信念。",
+        right:"我通常对新观念持开放态度。"
+    },
+    {
+        id:39,
+        left:"我喜欢从事需要创造力的工作。",
+        right:"我喜欢为自己设定比较有挑战性的目标。而且大多数时候能实现。"
+    },
+    {
+        id:40,
+        left:"我会仔细地完成自己的工作。尽管这会花费额外时间和精力。",
+        right:"虽然成为团队负责人很辛苦。但也会带来满足感。"
+    },
+    {
+        id:41,
+        left:"我有时喜欢看那些能学到新东西的书籍或电视节目。",
+        right:"总体上;我可以说是相当可靠的。"
+    },
+    {
+        id:42,
+        left:"我的朋友说我做事没条理。",
+        right:"我要努力赚钱这样才能得到更好的生活品质拥有更昂贵的物质享受。"
+    },
+    {
+        id:43,
+        left:"我喜欢完成那些需要团队协作的任务。",
+        right:"我觉得自己的笑话很有趣;但不是每个人都这么认为。"
+    },
+    {
+        id:44,
+        left:"我可能有点漠视别人的感受",
+        right:"生活是严肃的。因此很难每天都保持快乐。"
+    },
+    {
+        id:45,
+        left:"如果某项任务我尝试过后发现很困难,我会坚持练习并看看自己能进步多少",
+        right:"对于让别人来领导我所在的小组;我完全没问题。"
+    },
+    {
+        id:46,
+        left:"我有时会纯粹为了乐趣而尝试构思新想法。",
+        right:"我会在完成任务的过程中确保所有小细节都准确无误。"
+    },
+    {
+        id:47,
+        left:"我很清楚自己跟大多数同事的亲疏远近。",
+        right:"有时我会思考如何帮助遇到困难的人。"
+    },
+    {
+        id:48,
+        left:"比起学习或尝试新事物我有时候更喜欢做自己最熟悉的。",
+        right:"尽管这可能会让人筋疲力尽但我总是在问题出现时尽快处理。"
+    },
+    {
+        id:49,
+        left:"我总是乐意结识陌生人。",
+        right:"我为自己的职业生涯设定了很高的目标。"
+    },
+    {
+        id:50,
+        left:"我的想法很有价值,与他人分享这些想法非常重要。",
+        right:"遇到挫折后。我能很快地恢复。"
+    },
+    {
+        id:51,
+        left:"在有求于人的时候我很容易就能让对方觉得我喜欢他们。",
+        right:"有时我会变得非常情绪化。"
+    },
+    {
+        id:52,
+        left:"有时为了得到你想要的你必须装作很友善。",
+        right:"相比较带领下属起完成工作更愿意自己独立工作。"
+    },
+    {
+        id:53,
+        left:"了解我的人说我需要外部的协助才能保持条理性。",
+        right:"有些人关注的是生活中积极的一面，但我不常这样做。"
+    },
+    {
+        id:54,
+        left:"我通常会说出自己的观点。即使我知道其他人并不同意。",
+        right:"我对自己的看法不总是与别人对我的看法一致。"
+    },
+    {
+        id:55,
+        left:"当我说能搞定某件事的时候;大家都会信任我。",
+        right:"工作中学习新的技能会让我很有满足感。"
+    },
+    {
+        id:56,
+        left:"在大多数情况下,我在困境中也能应付自如。",
+        right:"我觉得每年在工作中接受几次新挑战很重要。"
+    },
+    {
+        id:57,
+        left:"我喜欢跟人待在一起。",
+        right:"别人总能在我身上发现一些我末曾注意到的特点。"
+    },
+    {
+        id:58,
+        left:"我非常努力地工作。这样才能在事业上提升。",
+        right:"我一向认为与团队成员相处融洽是很容易的。"
+    },
+    {
+        id:59,
+        left:"愿意付出的人会得到更多的回报。",
+        right:"我乐于寻找更好的方法来完成日常工作。"
+    },
+    {
+        id:60,
+        left:"我愿意用新方法来处理问题,特别是在它能让事情变得简单的情况下。",
+        right:"我很感激那些不遗余力帮助我的人。"
+    },
+    {
+        id:61,
+        left:"我很少发脾气。",
+        right:"我不需要通过赚很多钱来获得成就感。"
+    },
+    {
+        id:62,
+        left:"我仅通过与他人的交谈就能快速了解对方的感受。",
+        right:"多数情况下。我会把东西放回原来的位置。"
+    },
+    {
+        id:63,
+        left:"我对每个新认识的人都格外礼貌。",
+        right:"我有丰富的想象力。"
+    },
+    {
+        id:64,
+        left:"即使可能在一开始就失败。我也无惧接受挑战性任务。",
+        right:"即使诸事不顺。我也有信心能够把事情搞定。"
+    },
+    {
+        id:65,
+        left:"我有时很难陈述自己的观点。",
+        right:"我并非每天都勤奋地工作。"
+    },
+    {
+        id:66,
+        left:"我是个独立的人,不是每次都能跟别人合作得很好。",
+        right:"我难以开口告诉别人他们错了。"
+    },
+    {
+        id:67,
+        left:"我往往能察觉到自己何时让别人感到不舒服了。",
+        right:"我总是能理解别人的观点。"
+    },
+    {
+        id:68,
+        left:"如果我发现有人需要帮助我会想尽办法伸出援手即使这可能会给自己造成-些麻烦。",
+        right:"有时我会争取成为领导者。"
+    },
+    {
+        id:69,
+        left:"如果在某件事上已经失败了却执意继续尝试。这是不太明智的做法。",
+        right:"要让别人意识到你的成功拥有一些价值昂贵的东西是必要的。"
+    },
+    {
+        id:70,
+        left:"我希望每个细节都不出现疏漏。",
+        right:"我总是在工作中努力地做得更多。"
+    },
+    {
+        id:71,
+        left:"在工作中。我宁愿作为团队的一部分。而不是必须领导团队的人。",
+        right:"即使别人对我很不礼貌,我也总能保持心平气和。"
+    },
+    {
+        id:72,
+        left:"大多数时候我能实现目标。",
+        right:"我对自己的未来相当乐观。"
+    },
+    {
+        id:73,
+        left:"在完成一个大项目时。我有时会分心。",
+        right:"我宁愿一个人独处。而不是参加社交活动。"
+    },
+    {
+        id:74,
+        left:"乐于接受新观念有助于自己的成长。",
+        right:"在必要的情况下我也能和他人合作得很好。"
+    },
+    {
+        id:75,
+        left:"我很难认识到自己的优点和缺点。",
+        right:"我宁愿做那些只有一种办法可以解决的事。而不是那些需要创造力才能完成的事。"
+    },
+    {
+        id:76,
+        left:"对于多数人而言,只要付出足够的努力就能够把事情做好。",
+        right:"有时我能基于别人的面部表情来分辨他们的感受。"
+    },
+    {
+        id:77,
+        left:"我跟别人能较快地热络起来。",
+        right:"杂乱无章的工作环境会让我难以开展工作。"
+    },
+    {
+        id:78,
+        left:"我有信心为整个团队做出决定。",
+        right:"为了取得成功,我愿意加班加点地工作。"
+    },
+    {
+        id:79,
+        left:"有时我从朋友那里得知自己说了冒犯他人的话。",
+        right:"如果我有求于人,就算他/她讲的笑话再不好笑。我也会笑出声来。"
+    },
+    {
+        id:80,
+        left:"我很难知道别人会对我的行动作何反应。",
+        right:"我总是相信，如果能由我全权掌控，结果会变得更好。"
+    },
+    {
+        id:81,
+        left:"如果没能完成一项新的任务。我会找人帮忙而不是放弃。",
+        right:"当我的生活发生重大变化时，我有时会感到担忧。"
+    },
+    {
+        id:82,
+        left:"我喜欢独立工作;我并不需要别人的帮助。",
+        right:"我发现,由我自己掌控局面的时候;事情会进展得更顺利。"
+    },
+    {
+        id:83,
+        left:"我能准确地把握自己在工作中的优势和弱点。",
+        right:"我喜欢遵照计划和步骤来实现目标。"
+    },
+    {
+        id:84,
+        left:"我喜欢琢磨解决问题的新方案。",
+        right:"总体而言。我是个乐天派。"
+    },
+    {
+        id:85,
+        left:"一旦实现了某项目标。我会立刻寻找下一个。",
+        right:"我消费的时候不是一个在意品牌的人。"
+    },
+    {
+        id:86,
+        left:"我很喜欢在工作中找寻新的挑战。",
+        right:"大多数情况下。我会保持积极的态度。"
+    },
+    {
+        id:87,
+        left:"我天生就是一个友善的人。",
+        right:"大家认为我经常能提出一些十分特别的想法和方案。"
+    },
+    {
+        id:88,
+        left:"即使不喜欢,我也不会对同事表现出来。因为以后我可能还需要他们的帮助。",
+        right:"我对自己关心的话题直言不讳。"
+    },
+    {
+        id:89,
+        left:"我有自己的做事方式且我不想改变。",
+        right:"在我非常担心某些事的时候。我会变得暴躁。"
+    },
+    {
+        id:90,
+        left:"人的一生中有些事情比拥有财富和成功更有意义。",
+        right:"当我说了要去做某件事的时候常我会坚持下去。"
+    },
+    {
+        id:91,
+        left:"我喜欢那些需要反复实践才能做好的工作。",
+        right:"我有时真的不太擅长社交。"
+    },
+    {
+        id:92,
+        left:"当有很多事情需要完成时,我很难明确下一步该做什么。",
+        right:"我希望能晋升,因为这就意味着我可以领导别人了。"
+    },
+    {
+        id:93,
+        left:"我喜欢了解其他国家。",
+        right:"我常常能在压力情境下保持冷静。"
+    },
+    {
+        id:94,
+        left:"人们通常都知道我很感激他们的帮助。",
+        right:"我认为多花点时间在第一次就把事情做正确,好过匆忙完成不得不回头纠正错误。"
+    },
+    {
+        id:95,
+        left:"我很喜欢与别人谈论我深信不疑的事物。",
+        right:"我非常在意自己与别人的关系如何。"
+    },
+    {
+        id:96,
+        left:"朋友们会说我总是喜欢跟一帮人在一起。",
+        right:"我的想象力不太丰富但我很了解现实世界是怎样的。"
+    },
+    {
+        id:97,
+        left:"我常会思考如何实现工作目标，即使不在工作时也是如此。",
+        right:"我有时也会跳脱于自己常用的老办法。试试新办法。"
+    },
+    {
+        id:98,
+        left:"和大多数人一样,我能在公共场合控制自己的情绪。",
+        right:"在和别人一起工作时;我总是尽量了解他们的观点。"
+    },
+    {
+        id:99,
+        left:"我经常意识不到自己的行为会对他人产生什么影响。",
+        right:"在工作中我理应比我的同事获得更多的嘉奖。"
+    },
+    {
+        id:100,
+        left:"即便身处困境;我也很容易想到快乐的事情。",
+        right:"相比较自己做个领导者。我更倾向于让别人承担这个角色。"
+    }
+];
+
+const progressBar = document.getElementById('progressBar');
+const questionsBox = document.getElementById('questionsBox');
+const timerText = document.getElementById('timerText');
+
+// 启动倒计时
+function startTimer() {
+    timerInterval = setInterval(()=>{
+        remainSeconds--;
+        const min = Math.floor(remainSeconds / 60);
+        const sec = remainSeconds % 60;
+        timerText.innerText = `剩余时间：${String(min).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+
+        if(remainSeconds <= 0){
+            clearInterval(timerInterval);
+            timeOutSubmit();
+        }
+    },1000);
+}
+
+// 超时强制提交
+function timeOutSubmit(){
+    alert("测评时间已到，系统自动提交答案！");
+    console.log("超时自动提交，作答数据：", answerRecord);
+    // 尝试关闭页面
+    window.close();
+}
+
+function renderPage(){
+    questionsBox.innerHTML = "";
+    const startIdx = currentPageIndex * PAGE_SIZE;
+    const pageData = questionBank.slice(startIdx, startIdx + PAGE_SIZE);
+
+    pageData.forEach(item=>{
+        const rowDom = document.createElement('div');
+        rowDom.className = "question-row";
+        rowDom.dataset.qid = item.id;
+        rowDom.innerHTML = `
+            <div class="q-left">
+                <div class="q-text">${item.left}</div>
+            </div>
+            <div class="q-divider"></div>
+            <div class="q-right">
+                <div class="q-text">${item.right}</div>
+            </div>
+            <!-- 共用一条滑块，整行跨三栏 -->
+            <div class="slider-full-row">
+                <span class="arrow-left">&lt;</span>
+                <div class="slider-line"></div>
+                <div class="dot-group">
+                    <div class="dot"></div>
+                    <div class="dot"></div>
+                    <div class="dot"></div>
+                    <div class="dot"></div>
+                    <div class="dot"></div>
+                    <div class="dot"></div>
+                    <div class="dot"></div>
+                </div>
+                <span class="arrow-right">&gt;</span>
+            </div>
+            <!-- 底部标签也是整行跨三栏 -->
+            <div class="label-full-row">
+                <span class="label-text">非常赞同</span>
+                <span class="label-text"></span>
+                <span class="label-text">比较赞同</span>
+                <span class="label-text"></span>
+                <span class="label-text">比较赞同</span>
+                <span class="label-text"></span>
+                <span class="label-text">非常赞同</span>
+            </div>
+        `;
+        questionsBox.appendChild(rowDom);
+        bindDotClick(rowDom);
+        // 恢复已选项
+        if(answerRecord[item.id] !== undefined){
+            const dots = rowDom.querySelectorAll('.dot');
+            dots[answerRecord[item.id]].classList.add('selected');
+        }
+    })
+}
+
+function bindDotClick(rowDom){
+    const qid = rowDom.dataset.qid;
+    const dots = rowDom.querySelectorAll('.dot');
+    dots.forEach((dot, idx)=>{
+        dot.onclick = function(){
+            dots.forEach(d=>d.classList.remove('selected'));
+            this.classList.add('selected');
+            answerRecord[qid] = idx;
+            checkPageComplete();
+        }
+    })
+}
+
+function checkPageComplete(){
+    const allRows = document.querySelectorAll('.question-row');
+    let finished = 0;
+    allRows.forEach(row=>{
+        if(row.querySelector('.dot.selected')) finished++;
+    })
+    if(finished === PAGE_SIZE){
+        setTimeout(nextPage, 600);
+    }
+}
+
+function nextPage(){
+    currentPageIndex++;
+    progressBar.style.width = (5 + currentPageIndex * STEP_PER_PAGE) + "%";
+    const totalPages = Math.ceil(TOTAL_ALL_QUESTIONS / PAGE_SIZE);
+    if(currentPageIndex >= totalPages){
+        clearInterval(timerInterval);
+        alert("测评完成！");
+        console.log("全部作答数据", answerRecord);
+        window.close();
+        return;
+    }
+    renderPage();
+}
+
+// 初始化
+renderPage();
+startTimer();
+</script>
+</body>
+</html>
